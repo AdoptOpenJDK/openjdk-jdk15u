@@ -2633,7 +2633,17 @@ int PhaseIdealLoop::do_range_check(IdealLoopTree *loop, Node_List &old_new) {
           Node* init = cl->init_trip();
           Node* opaque_init = new OpaqueLoopInitNode(C, init);
           register_new_node(opaque_init, predicate_proj);
+<<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+          // template predicate so it can be updated on next unrolling
+          predicate_proj = add_range_check_predicate(loop, cl, predicate_proj, scale_con, int_offset, int_limit, stride_con, opaque_init);
+          assert(skeleton_predicate_has_opaque(predicate_proj->in(0)->as_If()), "unexpected");
+>>>>>>> jdk-15.0.1+2
+=======
+
+>>>>>>> jdk-15.0.1+3
           // predicate on first value of first iteration
           predicate_proj = add_range_check_predicate(loop, cl, predicate_proj, scale_con, int_offset, int_limit, stride_con, init);
           assert(!skeleton_predicate_has_opaque(predicate_proj->in(0)->as_If()), "unexpected");
@@ -2648,9 +2658,21 @@ int PhaseIdealLoop::do_range_check(IdealLoopTree *loop, Node_List &old_new) {
           register_new_node(max_value, predicate_proj);
           max_value = new AddINode(opaque_init, max_value);
           register_new_node(max_value, predicate_proj);
+<<<<<<< HEAD
+<<<<<<< HEAD
+          predicate_proj = add_range_check_predicate(loop, cl, predicate_proj, scale_con, offset, limit, stride_con, max_value);
+          assert(skeleton_predicate_has_opaque(predicate_proj->in(0)->as_If()), "unexpected");
+
+=======
+          // predicate on last value of first iteration (in case unrolling has already happened)
+          predicate_proj = add_range_check_predicate(loop, cl, predicate_proj, scale_con, int_offset, int_limit, stride_con, max_value);
+          assert(!skeleton_predicate_has_opaque(predicate_proj->in(0)->as_If()), "unexpected");
+>>>>>>> jdk-15.0.1+2
+=======
           predicate_proj = add_range_check_predicate(loop, cl, predicate_proj, scale_con, int_offset, int_limit, stride_con, max_value);
           assert(skeleton_predicate_has_opaque(predicate_proj->in(0)->as_If()), "unexpected");
 
+>>>>>>> jdk-15.0.1+3
         } else {
           if (PrintOpto) {
             tty->print_cr("missed RCE opportunity");
