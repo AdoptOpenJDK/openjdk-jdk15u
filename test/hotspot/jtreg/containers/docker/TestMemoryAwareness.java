@@ -28,6 +28,7 @@
  * @requires docker.support
  * @library /test/lib
  * @modules java.base/jdk.internal.misc
+ *          java.base/jdk.internal.platform
  *          java.management
  *          jdk.jartool/sun.tools.jar
  * @build AttemptOOM sun.hotspot.WhiteBox PrintContainerInfo CheckOperatingSystemMXBean
@@ -142,22 +143,34 @@ public class TestMemoryAwareness {
             .addDockerOpts(
                 "--memory", memoryAllocation,
                 "--memory-swap", swapAllocation
-            );
+            )
+            // CheckOperatingSystemMXBean uses Metrics (jdk.internal.platform) for
+            // diagnostics
+            .addJavaOpts("--add-exports")
+            .addJavaOpts("java.base/jdk.internal.platform=ALL-UNNAMED");
 
         OutputAnalyzer out = DockerTestUtils.dockerRunJava(opts);
         out.shouldHaveExitValue(0)
            .shouldContain("Checking OperatingSystemMXBean")
            .shouldContain("OperatingSystemMXBean.getTotalPhysicalMemorySize: " + expectedMemory)
-           .shouldMatch("OperatingSystemMXBean\\.getFreePhysicalMemorySize: [1-9][0-9]+")
            .shouldContain("OperatingSystemMXBean.getTotalMemorySize: " + expectedMemory)
            .shouldMatch("OperatingSystemMXBean\\.getFreeMemorySize: [1-9][0-9]+")
-           .shouldMatch("OperatingSystemMXBean\\.getFreeSwapSpaceSize: [1-9][0-9]+");
-        // in case of warnings like : "Your kernel does not support swap limit capabilities or the cgroup is not mounted. Memory limited without swap."
-        // the getTotalSwapSpaceSize does not return the expected result, but 0
+           .shouldMatch("OperatingSystemMXBean\\.getFreePhysicalMemorySize: [1-9][0-9]+");
+
+        // in case of warnings like : "Your kernel does not support swap limit capabilities
+        // or the cgroup is not mounted. Memory limited without swap."
+        // the getTotalSwapSpaceSize and getFreeSwapSpaceSize return the system
+        // values as the container setup isn't supported in that case.
         try {
             out.shouldContain("OperatingSystemMXBean.getTotalSwapSpaceSize: " + expectedSwap);
         } catch(RuntimeException ex) {
-            out.shouldContain("OperatingSystemMXBean.getTotalSwapSpaceSize: 0");
+            out.shouldMatch("OperatingSystemMXBean.getTotalSwapSpaceSize: [0-9]+");
+        }
+
+        try {
+            out.shouldMatch("OperatingSystemMXBean\\.getFreeSwapSpaceSize: [1-9][0-9]+");
+        } catch(RuntimeException ex) {
+            out.shouldMatch("OperatingSystemMXBean\\.getFreeSwapSpaceSize: 0");
         }
     }
 
